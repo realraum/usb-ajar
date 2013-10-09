@@ -23,7 +23,7 @@
 NAME := usb-ajar
 BOARD_TYPE := minimus32
 OBJ := $(NAME).o
-LIBS := util led lufa-descriptor-usbserial anyio
+LIBS := util led lufa-descriptor-usbserial anyio onewire ds1820
 EXTERNAL_LIBS := lufa
 RESET_FUNC := ../tools/reset_lufa_cdc
 RESET_PARAM := 'r'
