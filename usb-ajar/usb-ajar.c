@@ -54,7 +54,6 @@ void tempToUSB(uint8_t bit_resolution)
 {
     uint8_t sensor_index = 0;
     uint16_t raw_temp = 0;
-    double temp=0.0;
 
     if (num_temp_sensors_ == 0)
     {
@@ -77,8 +76,7 @@ void tempToUSB(uint8_t bit_resolution)
         {
             printf("CRC comm error\r\n");
         } else {
-            temp = ds1820_raw_temp_to_celsius( raw_temp );
-            printf("temp%d: %d.%d", sensor_index +1, raw_temp / 16, 10 * (raw_temp % 16) / 16);
+            printf("temp%d: %d.%d\r\n", sensor_index +1, raw_temp / 16, 10 * (raw_temp % 16) / 16);
         }
     }
 }
@@ -87,7 +85,7 @@ void handle_cmd(uint8_t cmd)
 {
   switch(cmd) {
   case 'r': reset2bootloader(); break;
-  case '1': num_temp_sensors_ = ds1820_discover(); break;    
+  case '1': num_temp_sensors_ = ds1820_discover(); break;
   default: printf("error\r\n"); return;
   }
   printf("ok\r\n");
@@ -98,15 +96,17 @@ int main(void)
   /* Disable watchdog if enabled by bootloader/fuses */
   MCUSR &= ~(1 << WDRF);
   wdt_disable();
-  
+
   cpu_init();
   led_init();
   anyio_init(115200, 0);
   sei();
-  owi_init(PINC4, &PINC);
 
   PIN_HIGH(PORTB, PINB1);
   PINMODE_INPUT(DDRB,  PINB1);
+
+  owi_init(PINC4, &PINC);
+
   char door_ajar = 0;
   char last_door_ajar = 0;
 
@@ -125,7 +125,7 @@ int main(void)
       }
       BytesReceived--;
     }
-    
+
     door_ajar = PINB & _BV(PINB1);
     if (door_ajar != last_door_ajar) {
       last_door_ajar = door_ajar;
@@ -139,20 +139,20 @@ int main(void)
         led2_off();
       }
     }
-    
+
     anyio_task();
     if (door_ajar) {
       _delay_ms(100);
       ms_elapsed += 100;
       led_toggle();
       led2_toggle();
-    } else 
+    } else
     {
       _delay_ms(1200);
       ms_elapsed += 1200;
       led2_toggle();
     }
-    
+
     if (ms_elapsed & (1<<14))
     {
         ms_elapsed = 0;
