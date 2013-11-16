@@ -104,11 +104,17 @@ int main(void)
 
   PIN_HIGH(PORTB, PINB1);
   PINMODE_INPUT(DDRB,  PINB1);
+  PIN_HIGH(PORTB, PINB0);
+  PINMODE_INPUT(DDRB,  PINB0);
+  PIN_LOW(PORTD, PIND7);
+  PINMODE_OUTPUT(DDRD,  PIND7);
 
   owi_init(PINC4, &PINC);
 
   char door_ajar = 0;
   char last_door_ajar = 0;
+  char gas_leak = 0;
+  char last_gas_leak = 0;
 
   num_temp_sensors_ = ds1820_discover();
   uint16_t ms_elapsed = 0;
@@ -139,6 +145,13 @@ int main(void)
         led2_off();
       }
     }
+    gas_leak = ! (PINB & _BV(PINB0));
+    if (gas_leak != last_gas_leak)
+    {
+      if (gas_leak)
+        printf("GasLeakAlert\r\n");
+      last_gas_leak = gas_leak;
+    }
 
     anyio_task();
     if (door_ajar) {
@@ -155,6 +168,8 @@ int main(void)
 
     if (ms_elapsed & (1<<14))
     {
+        if (gas_leak)
+          printf("GasLeakAlert\r\n");
         ms_elapsed = 0;
         tempToUSB(12);
     }
