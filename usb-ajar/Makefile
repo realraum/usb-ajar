@@ -1,23 +1,23 @@
 ##
-##  spreadspace avr utils
+##  usb-ajar
 ##
 ##
 ##  Copyright (C) 2013-2014 Christian Pointner <equinox@spreadspace.org>
 ##
-##  This file is part of spreadspace avr utils.
+##  This file is part of usb-ajar.
 ##
-##  spreadspace avr utils is free software: you can redistribute it and/or modify
+##  usb-ajar is free software: you can redistribute it and/or modify
 ##  it under the terms of the GNU General Public License as published by
 ##  the Free Software Foundation, either version 3 of the License, or
 ##  any later version.
 ##
-##  spreadspace avr utils is distributed in the hope that it will be useful,
+##  usb-ajar is distributed in the hope that it will be useful,
 ##  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ##  GNU General Public License for more details.
 ##
 ##  You should have received a copy of the GNU General Public License
-##  along with spreadspace avr utils. If not, see <http://www.gnu.org/licenses/>.
+##  along with usb-ajar. If not, see <http://www.gnu.org/licenses/>.
 ##
 
 NAME := usb-ajar
@@ -25,7 +25,7 @@ BOARD_TYPE := minimus32
 OBJ := $(NAME).o
 LIBS := util led lufa-descriptor-usbserial anyio onewire ds1820
 EXTERNAL_LIBS := lufa
-SPREADAVR_PATH := ..
+SPREADAVR_PATH := ../contrib/avr-utils
 RESET_FUNC := $(SPREADAVR_PATH)/tools/reset_lufa_cdc
 RESET_PARAM := 'r'
 
