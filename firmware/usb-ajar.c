@@ -49,16 +49,32 @@
 #define LOWv OP_CLEARBIT
 
 uint8_t num_temp_sensors_ = 0;
+uint8_t num_temp_sensors_mirror_ = 0;
+
+void complementUint8(uint8_t *ptr1, uint8_t *complement)
+{
+  *complement = 0xff ^ *ptr1;
+}
+
+void complementCheckUint8(uint8_t *ptr1, uint8_t *complement)
+{
+  if (( *ptr1 ^ *complement ^ 0xff) > 0 )
+  {
+      reset2bootloader();
+  }
+}
 
 void tempToUSB(uint8_t bit_resolution)
 {
     uint8_t sensor_index = 0;
     uint16_t raw_temp = 0;
 
+    complementCheckUint8(&num_temp_sensors_, &num_temp_sensors_mirror_);
     if (num_temp_sensors_ == 0)
     {
         printf("No DS1820 sensors ?? running bus discovery... \r\n");
         num_temp_sensors_ = ds1820_discover();
+        complementUint8(&num_temp_sensors_, &num_temp_sensors_mirror_);
     }
 
     for (sensor_index=0; sensor_index < num_temp_sensors_; sensor_index++)
@@ -85,7 +101,7 @@ void handle_cmd(uint8_t cmd)
 {
   switch(cmd) {
   case 'r': reset2bootloader(); break;
-  case '1': num_temp_sensors_ = ds1820_discover(); break;
+  case '1': num_temp_sensors_ = ds1820_discover(); complementUint8(&num_temp_sensors_, &num_temp_sensors_mirror_); break;
   default: printf("error\r\n"); return;
   }
   printf("ok\r\n");
@@ -111,12 +127,18 @@ int main(void)
 
   owi_init(PINC4, &PINC);
 
-  char door_ajar = 0;
-  char last_door_ajar = 0;
-  char gas_leak = 0;
-  char last_gas_leak = 0;
+  uint8_t door_ajar = 0;
+  uint8_t last_door_ajar = 0;
+  uint8_t last_door_ajar_mirror = 0;
+  uint8_t gas_leak = 0;
+  uint8_t last_gas_leak = 0;
+  uint8_t last_gas_leak_mirror = 0;
+
+  complementUint8(&last_door_ajar, &last_door_ajar_mirror);
+  complementUint8(&last_gas_leak, &last_gas_leak_mirror);
 
   num_temp_sensors_ = ds1820_discover();
+  complementUint8(&num_temp_sensors_, &num_temp_sensors_mirror_);
   uint16_t ms_elapsed = 0;
 
   led_off();
@@ -133,24 +155,29 @@ int main(void)
     }
 
     door_ajar = PINB & _BV(PINB1);
+
+    complementCheckUint8(&last_door_ajar, &last_door_ajar_mirror);
     if (door_ajar != last_door_ajar) {
       last_door_ajar = door_ajar;
-      if (door_ajar) {
+      complementUint8(&last_door_ajar, &last_door_ajar_mirror);
+      if (door_ajar == _BV(PINB1)) {
         printf("BackdoorInfo(ajar): ajar\r\n");
         led_off();
         led2_on();
-      } else {
+      } else if ((door_ajar & _BV(PINB1)) == 0) {
         printf("BackdoorInfo(ajar): shut\r\n");
         led_off();
         led2_off();
       }
     }
     gas_leak = ! (PINB & _BV(PINB0));
+    complementCheckUint8(&last_gas_leak, &last_gas_leak_mirror);
     if (gas_leak != last_gas_leak)
     {
       if (gas_leak)
         printf("GasLeakAlert\r\n");
       last_gas_leak = gas_leak;
+      complementUint8(&last_gas_leak, &last_gas_leak_mirror);
     }
 
     anyio_task();
