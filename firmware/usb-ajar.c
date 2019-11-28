@@ -118,18 +118,39 @@ int main(void)
   anyio_init(115200, 0);
   sei();
 
+  //VCC Supply for Lock-Sensor
+  PIN_HIGH(PORTB, PINB4);
+  PINMODE_OUTPUT(DDRB,  PINB4);
+
+  //GND Supply for Lock-Sensor
+  PIN_LOW(PORTB, PINB3);
+  PINMODE_OUTPUT(DDRB,  PINB3);
+
+  //Signal for Lock-Sensor (Hall-Sensor)
+  PIN_HIGH(PORTB, PINB2);
+  PINMODE_INPUT(DDRB,  PINB2);
+
+  //Signal for Ajar-Sensor (Reed-Switch)
   PIN_HIGH(PORTB, PINB1);
   PINMODE_INPUT(DDRB,  PINB1);
+
+  //Signal for Gas-Alert-Sensor
   PIN_HIGH(PORTB, PINB0);
   PINMODE_INPUT(DDRB,  PINB0);
+
+  //GND Supply for Gas-Alert-Sensor
   PIN_LOW(PORTD, PIND7);
   PINMODE_OUTPUT(DDRD,  PIND7);
 
+  //DS18b20 OneWire Temp-Sensor
   owi_init(PINC4, &PINC);
 
   uint8_t door_ajar = 0;
   uint8_t last_door_ajar = 0;
   uint8_t last_door_ajar_mirror = 0;
+  uint8_t door_unlocked = 0;
+  uint8_t last_door_unlocked = 0;
+  uint8_t last_door_unlocked_mirror = 0;
   uint8_t gas_leak = 0;
   uint8_t last_gas_leak = 0;
   uint8_t last_gas_leak_mirror = 0;
@@ -142,7 +163,7 @@ int main(void)
   uint16_t ms_elapsed = 0;
 
   led_off();
-  led2_on();
+  led2_off();
 
   for(;;) {
     int16_t BytesReceived = anyio_bytes_received();
@@ -155,6 +176,7 @@ int main(void)
     }
 
     door_ajar = PINB & _BV(PINB1);
+    door_unlocked = PINB & _BV(PINB2);
 
     complementCheckUint8(&last_door_ajar, &last_door_ajar_mirror);
     if (door_ajar != last_door_ajar) {
@@ -162,11 +184,20 @@ int main(void)
       complementUint8(&last_door_ajar, &last_door_ajar_mirror);
       if (door_ajar == _BV(PINB1)) {
         printf("BackdoorInfo(ajar): ajar\r\n");
-        led_off();
-        led2_on();
+        led_on();
       } else if ((door_ajar & _BV(PINB1)) == 0) {
         printf("BackdoorInfo(ajar): shut\r\n");
         led_off();
+      }
+    }
+    if (door_unlocked != last_door_unlocked) {
+      last_door_unlocked = door_unlocked;
+      complementUint8(&last_door_unlocked, &last_door_unlocked_mirror);
+      if (door_unlocked == _BV(PINB2)) {
+        printf("BackdoorInfo(unlocked): unlocked\r\n");
+        led2_on();
+      } else if ((door_unlocked & _BV(PINB2)) == 0) {
+        printf("BackdoorInfo(unlocked): locked\r\n");
         led2_off();
       }
     }
@@ -184,13 +215,14 @@ int main(void)
     if (door_ajar) {
       _delay_ms(100);
       ms_elapsed += 100;
-      led_toggle();
-      led2_toggle();
+      led_toggle(); //blue
     } else
     {
-      _delay_ms(1200);
+      _delay_ms(1180);
+      led2_toggle(); //red
+      _delay_ms(20);
+      led2_toggle(); //red
       ms_elapsed += 1200;
-      led2_toggle();
     }
 
     if (ms_elapsed & (1<<14))
