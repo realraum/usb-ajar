@@ -50,6 +50,7 @@
 
 uint8_t num_temp_sensors_ = 0;
 uint8_t num_temp_sensors_mirror_ = 0;
+uint8_t status_update_requested_ = 0;
 
 void complementUint8(uint8_t *ptr1, uint8_t *complement)
 {
@@ -102,6 +103,7 @@ void handle_cmd(uint8_t cmd)
   switch(cmd) {
   case 'r': reset2bootloader(); break;
   case '1': num_temp_sensors_ = ds1820_discover(); complementUint8(&num_temp_sensors_, &num_temp_sensors_mirror_); break;
+  case 's': status_update_requested_ = 1; break;
   default: printf("error\r\n"); return;
   }
   printf("ok\r\n");
@@ -179,7 +181,7 @@ int main(void)
     door_unlocked = PINB & _BV(PINB2);
 
     complementCheckUint8(&last_door_ajar, &last_door_ajar_mirror);
-    if (door_ajar != last_door_ajar) {
+    if (door_ajar != last_door_ajar || status_update_requested_ > 0) {
       last_door_ajar = door_ajar;
       complementUint8(&last_door_ajar, &last_door_ajar_mirror);
       if (door_ajar == _BV(PINB1)) {
@@ -190,7 +192,7 @@ int main(void)
         led_off();
       }
     }
-    if (door_unlocked != last_door_unlocked) {
+    if (door_unlocked != last_door_unlocked || status_update_requested_ > 0) {
       last_door_unlocked = door_unlocked;
       complementUint8(&last_door_unlocked, &last_door_unlocked_mirror);
       if (door_unlocked == _BV(PINB2)) {
@@ -232,5 +234,6 @@ int main(void)
         ms_elapsed = 0;
         tempToUSB(12);
     }
+    status_update_requested_=0;
   }
 }
